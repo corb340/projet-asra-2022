@@ -1,0 +1,15 @@
+# Terraform dot files
+.terraform
+.terraformrc
+**/.terraform/*
+.terraform.d
+*.tfstate
+*.tfstate.*
+
+# Dynamic inventory
+ansible/inventory.yml
+
+# Just in case
+openrc.sh
+**/openrc.sh
+*.sh
