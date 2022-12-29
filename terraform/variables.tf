@@ -1,9 +1,9 @@
 #référencement des régions
 variable "region" {
-#  type    = list
-#  default = ["GRA11","SBG5"]
-  type = string
-  default = "GRA11"
+  type    = list
+  default = ["GRA11","SBG5"]
+#  type = string
+#  default = "GRA11"
 }
 
 #nom de l'instance selon eductive25
