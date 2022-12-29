@@ -25,3 +25,9 @@ variable "flavor_name" {
   default = "s1-2"
 }
 
+#nombre d'instances back
+variable "backend_number_of_instances" {
+  type    = number
+  default = 1
+}
+
