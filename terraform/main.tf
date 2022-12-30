@@ -1,21 +1,21 @@
 #fichier principal contenant tout ce qu'il faut pour configurer les instances (boot, network, ansible sync)
 
 #initialisation du réseau
-resource "openstack_networking_network_v2" "reseau" {
-  name = "vrack"
-}
+#resource "openstack_networking_network_v2" "reseau" {
+#  name = "vrack"
+#}
 
 #initialisation sous-reseau
-resource "openstack_networking_subnet_v2" "sous_reseau" {
-  name = "sous_reseau"
-  network_id = "${openstack_networking_network_v2.reseau.id}"
-  cidr = "192.168.25.0/24"
-  ip_version = 4
-  enable_dhcp = "true"
-  no_gateway = "true"
-}
+#resource "openstack_networking_subnet_v2" "sous_reseau" {
+#  name = "sous_reseau"
+#  network_id = "${openstack_networking_network_v2.reseau.id}"
+#  cidr = "192.168.25.0/24"
+#  ip_version = 4
+#  enable_dhcp = "true"
+#  no_gateway = "true"
+#}
 
-resource 
+#resource 
 
 
 #création d'une ressource de paire de clés SSH

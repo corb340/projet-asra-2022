@@ -2,8 +2,6 @@
 variable "region" {
   type    = list
   default = ["GRA11","SBG5"]
-#  type = string
-#  default = "GRA11"
 }
 
 #nom de l'instance selon eductive25
@@ -31,3 +29,14 @@ variable "backend_number_of_instances" {
   default = 1
 }
 
+#variable nom de service pour le vRack
+variable "service_name" {
+  type    = string
+  default = "9957f50cea694f13b26cc064d04b2e95"
+}
+
+#variable identifiant du projet
+variable "project_id" {
+  type    = string
+  default = "9957f50cea694f13b26cc064d04b2e95"
+}
