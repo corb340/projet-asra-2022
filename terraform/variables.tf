@@ -1,3 +1,5 @@
+#=================VARIABLE CONCERNANT LES INSTANCES (GENERALES)=================#  
+
 #référencement des régions
 variable "region" {
   type    = list
@@ -29,14 +31,34 @@ variable "backend_number_of_instances" {
   default = 1
 }
 
+
+#=================VARIABLE CONCERNANT LE RESEAU=================#
+
 #variable nom de service pour le vRack
 variable "service_name" {
   type    = string
-  default = "9957f50cea694f13b26cc064d04b2e95"
 }
 
-#variable identifiant du projet
-variable "project_id" {
+#identifiant vrack
+variable  "vlan_id" {
+  type    = number
+  default = 25
+}
+
+#adresse de départ dhcp
+variable "vlan_dhcp_start" {
   type    = string
-  default = "9957f50cea694f13b26cc064d04b2e95"
+  default = "192.168.25.1"
+}
+
+#adresse de fin de plage dhcp
+variable "vlan_dhcp_finish" {
+  type    = string
+  default = "192.168.25.100"
+}
+
+#adresse CIDR du réseau
+variable "vlan_dhcp_network" {
+  type    = string
+  default = "192.168.25.0/24"
 }

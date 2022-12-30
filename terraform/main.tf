@@ -1,22 +1,32 @@
 #fichier principal contenant tout ce qu'il faut pour configurer les instances (boot, network, ansible sync)
 
-#initialisation du réseau
-#resource "openstack_networking_network_v2" "reseau" {
-#  name = "vrack"
-#}
+#====================VRACK====================#
+ 
+#création du réseau privé
+resource "ovh_cloud_project_network_private" "private_network" {
+  service_name = var.service_name 
+  name         = "private_network_${var.instance_name}"
+  regions       = var.region           
+  provider     = ovh.ovh
+  vlan_id      = var.vlan_id
+#  depends_on   = [ovh_vrack_cloudproject.vcp]
+}
+ 
+#creation du sous reseau
+resource "ovh_cloud_project_network_private_subnet" "subnetwork" {
+  count        = length(var.region)
+  network_id   = ovh_cloud_project_network_private.private_network.id
+  service_name = var.service_name
+  region       = element(var.region,count.index) 
+  network      = var.vlan_dhcp_network
+  start        = var.vlan_dhcp_start
+  end          = var.vlan_dhcp_finish  
+  dhcp         = true
+  provider     = ovh.ovh
+  no_gateway   = true
+}
 
-#initialisation sous-reseau
-#resource "openstack_networking_subnet_v2" "sous_reseau" {
-#  name = "sous_reseau"
-#  network_id = "${openstack_networking_network_v2.reseau.id}"
-#  cidr = "192.168.25.0/24"
-#  ip_version = 4
-#  enable_dhcp = "true"
-#  no_gateway = "true"
-#}
-
-#resource 
-
+#====================INSTANCES ET CLES SSH====================#
 
 #création d'une ressource de paire de clés SSH
 resource "openstack_compute_keypair_v2" "test_keypair" {
@@ -37,10 +47,15 @@ resource "openstack_compute_instance_v2" "front_projet_terraform" {
   region      = element(var.region,0)
 
   key_pair = openstack_compute_keypair_v2.test_keypair[0].name
-
+  #interface réseau public
   network {
     name       = "Ext-Net"
   }
+  #interface réseau privé
+  network {
+    name      = ovh_cloud_project_network_private.private_network.name
+  }
+  depends_on = [ovh_cloud_project_network_private_subnet.subnetwork]
 }
 
 #puis du backend
@@ -53,8 +68,13 @@ resource "openstack_compute_instance_v2" "backend_projet_terraform" {
   region      = element(var.region,count.index)
 
   key_pair = openstack_compute_keypair_v2.test_keypair[count.index%2].name
-
+  #iface réseau public
   network {
-    name       = "Ext-Net"
+    name      = "Ext-Net"
   }
+  #iface réseau privé
+  network {
+    name      = ovh_cloud_project_network_private.private_network.name
+  }
+  depends_on = [ovh_cloud_project_network_private_subnet.subnetwork]
 }

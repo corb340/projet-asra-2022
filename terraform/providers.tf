@@ -1,3 +1,5 @@
+# Ce fichier décrit les possibles providers et leur versions utilisés
+
 terraform {
   required_version = ">= 0.14.0"
   required_providers {
@@ -12,6 +14,8 @@ terraform {
   }
 }
 
+#configuration des providers OVH
+
 provider "openstack" {
   auth_url      = "https://auth.cloud.ovh.net/v3/"
   domain_name   = "default"
@@ -20,5 +24,5 @@ provider "openstack" {
 
 provider "ovh" {
   alias = "ovh"
-#  endpoint = "ovh-eu"
+  endpoint = "ovh-eu"
 }
