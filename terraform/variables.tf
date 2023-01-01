@@ -54,7 +54,7 @@ variable "vlan_dhcp_start" {
 #adresse de fin de plage dhcp
 variable "vlan_dhcp_finish" {
   type    = string
-  default = "192.168.25.100"
+  default = "192.168.25.200"
 }
 
 #adresse CIDR du réseau

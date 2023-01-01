@@ -11,6 +11,10 @@ terraform {
       source  = "ovh/ovh"
       version = ">= 0.13.0"
     }
+    local = {
+      source  = "hashicorp/local"
+      version = ">= 2.2.3"
+    }
   }
 }
 
@@ -23,6 +27,6 @@ provider "openstack" {
 }
 
 provider "ovh" {
-  alias = "ovh"
+  alias    = "ovh"
   endpoint = "ovh-eu"
 }

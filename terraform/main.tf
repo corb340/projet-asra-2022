@@ -6,25 +6,35 @@
 resource "ovh_cloud_project_network_private" "private_network" {
   service_name = var.service_name 
   name         = "private_network_${var.instance_name}"
-  regions       = var.region           
+  regions      = var.region           
   provider     = ovh.ovh
   vlan_id      = var.vlan_id
-#  depends_on   = [ovh_vrack_cloudproject.vcp]
 }
  
-#creation du sous reseau
-resource "ovh_cloud_project_network_private_subnet" "subnetwork" {
-  count        = length(var.region)
+#creation du sous reseau gravelines
+resource "ovh_cloud_project_network_private_subnet" "subnetwork_gra" {
   network_id   = ovh_cloud_project_network_private.private_network.id
   service_name = var.service_name
-  region       = element(var.region,count.index) 
+  region       = element(var.region,0) 
   network      = var.vlan_dhcp_network
   start        = var.vlan_dhcp_start
-  end          = var.vlan_dhcp_finish  
-  dhcp         = true
+  end          = var.vlan_dhcp_finish
   provider     = ovh.ovh
   no_gateway   = true
 }
+
+#creation du sous reseau strasbourg
+resource "ovh_cloud_project_network_private_subnet" "subnetwork_sbg" {
+  network_id   = ovh_cloud_project_network_private.private_network.id
+  service_name = var.service_name
+  region       = element(var.region,1)
+  network      = var.vlan_dhcp_network
+  start        = var.vlan_dhcp_start
+  end          = var.vlan_dhcp_finish
+  provider     = ovh.ovh
+  no_gateway   = true
+}
+
 
 #====================INSTANCES ET CLES SSH====================#
 
@@ -32,14 +42,14 @@ resource "ovh_cloud_project_network_private_subnet" "subnetwork" {
 resource "openstack_compute_keypair_v2" "test_keypair" {
   count      = length(var.region)
   provider   = openstack.ovh
-  name       = "sshkey_${var.instance_name}"
+  name       = "sshkey_${var.instance_name}_${count.index % 2 == 0 ? "gra" : "sbg" }"
   public_key = file("~/.ssh/id_rsa.pub")
   region     = element(var.region,count.index)
 }
 
 #création des instances
 #celle du front end
-resource "openstack_compute_instance_v2" "front_projet_terraform" {
+resource "openstack_compute_instance_v2" "front" {
   name        = "front_${var.instance_name}"
   provider    = openstack.ovh
   image_name  = var.image_name
@@ -54,20 +64,23 @@ resource "openstack_compute_instance_v2" "front_projet_terraform" {
   #interface réseau privé
   network {
     name      = ovh_cloud_project_network_private.private_network.name
+    fixed_ip_v4 = "192.168.${var.vlan_id}.254"
+    
   }
-  depends_on = [ovh_cloud_project_network_private_subnet.subnetwork]
+  depends_on = [ovh_cloud_project_network_private_subnet.subnetwork_gra]
 }
 
 #puis du backend
-resource "openstack_compute_instance_v2" "backend_projet_terraform" {
-  count       = var.backend_number_of_instances * length(var.region)
-  name        = "backend_${var.instance_name}_${lower(substr(element(var.region,count.index),0,3))}_${count.index == 0 ? count.index+1 : ceil((count.index+1)/2)}"
+#de gravelines
+resource "openstack_compute_instance_v2" "backend_gra" {
+  count       = var.backend_number_of_instances
+  name        = "backend_${var.instance_name}_gra_${count.index+2}"
   provider    = openstack.ovh
   image_name  = var.image_name
   flavor_name = var.flavor_name
-  region      = element(var.region,count.index)
+  region      = element(var.region,0)
 
-  key_pair = openstack_compute_keypair_v2.test_keypair[count.index%2].name
+  key_pair = openstack_compute_keypair_v2.test_keypair[0].name
   #iface réseau public
   network {
     name      = "Ext-Net"
@@ -75,6 +88,42 @@ resource "openstack_compute_instance_v2" "backend_projet_terraform" {
   #iface réseau privé
   network {
     name      = ovh_cloud_project_network_private.private_network.name
+    fixed_ip_v4 = "192.168.${var.vlan_id}.${count.index+1}"
   }
-  depends_on = [ovh_cloud_project_network_private_subnet.subnetwork]
+  depends_on = [ovh_cloud_project_network_private_subnet.subnetwork_gra]
+}
+
+#et de strasbourg
+resource "openstack_compute_instance_v2" "backend_sbg" {
+  count       = var.backend_number_of_instances
+  name        = "backend_${var.instance_name}_sbg_${count.index+1}"                                             
+  provider    = openstack.ovh 
+  image_name  = var.image_name 
+  flavor_name = var.flavor_name
+  region      = element(var.region,1)
+
+  key_pair = openstack_compute_keypair_v2.test_keypair[1].name
+  #iface réseau public
+  network {
+    name      = "Ext-Net"
+  }
+  #iface réseau privé
+  network {
+    name      = ovh_cloud_project_network_private.private_network.name
+    fixed_ip_v4 = "192.168.${var.vlan_id}.${count.index+101}"
+  } 
+  depends_on = [ovh_cloud_project_network_private_subnet.subnetwork_sbg]
+}
+
+
+#================== AUTRES ==================#
+resource "local_file" "inventory" {
+  filename = "../ansible/inventory.yml"
+  content  = templatefile("templates/inventory.tmpl",
+    {
+      front = openstack_compute_instance_v2.front.access_ip_v4,
+      backends_sbg = [for k, p in openstack_compute_instance_v2.backend_sbg: p.access_ip_v4],
+      backends_gra = [for k, p in openstack_compute_instance_v2.backend_gra: p.access_ip_v4],
+    }
+  )
 }
