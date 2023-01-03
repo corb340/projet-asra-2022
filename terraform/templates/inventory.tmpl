@@ -8,13 +8,11 @@ backends:
   hosts:
 %{for node in backends_sbg ~}
     ${node}:
-      gather_facts: True
       ansible_user: debian
       ansible_become: True
 %{endfor ~}
 %{for node in backends_gra ~}
     ${node}:
-      gather_facts: True
       ansible_user: debian
       ansible_become: True
 %{endfor ~}

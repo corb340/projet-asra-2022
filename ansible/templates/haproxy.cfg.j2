@@ -53,36 +53,37 @@ listen stats
 frontend front_1
     bind 0.0.0.0:80
     mode http
-    default_backend backend_1
+    default_backend backend_nginx
 
 frontend front_2
     bind 0.0.0.0:81
     mode http
-    default_backend backend_2
+    default_backend backend_docker
 
 #------------------
 # backend instances
 #------------------
+
+backend backend_nginx
+    mode http
+    balance roundrobin
+{% for backend in groups.backends -%}
 {% set list1=hostvars[backend].ansible_facts.fqdn.split('-') %}
+{% if list1[2] == "gra" %}
+    server {{hostvars[backend].ansible_facts.fqdn}} {{ hostvars[backend].ansible_facts.ens3.ipv4.address }}:8888 check
+{% else %}
+    server {{hostvars[backend].ansible_facts.fqdn}} {{ hostvars[backend].ansible_facts.ens3.ipv4.address }}:8888 check backup
+{% endif %}
+{% endfor -%}
 
-backend backend_1
+backend backend_docker
     mode http
     balance roundrobin
-    {% for backend in groups.backends -%}
-      {% if list1[2] == "gra" %}
-        server {{hostvars[backend].ansible_facts.fqdn}} {{ hostvars[backend].ansible_facts.ens3.ipv4.address }}":8888" check
-      {% else %}
-        server {{hostvars[backend].ansible_facts.fqdn}} {{ hostvars[backend].ansible_facts.ens3.ipv4.address }}":8888" check backup
-      {% endif %}
-    {% endfor -%}
-
-backend backend_2
-    mode http
-    balance roundrobin
-    {% for backend in groups.backends -%}
-      {% if list1[2] == "gra" %}
-        server {{hostvars[backend].ansible_facts.fqdn}} {{ hostvars[backend].ansible_facts.ens3.ipv4.address }}":4444" check
-      {% else %}
-        server {{hostvars[backend].ansible_facts.fqdn}} {{ hostvars[backend].ansible_facts.ens3.ipv4.address }}":4444" check backup
-      {% endif %}
-    {% endfor -%}
+{% for backend in groups.backends -%}
+{% set list1=hostvars[backend].ansible_facts.fqdn.split('-') %}
+{% if list1[2] == "gra" %}
+    server {{hostvars[backend].ansible_facts.fqdn}} {{ hostvars[backend].ansible_facts.ens4.ipv4.address }}:4444 check
+{% else %}
+    server {{hostvars[backend].ansible_facts.fqdn}} {{ hostvars[backend].ansible_facts.ens4.ipv4.address }}:4444 check backup
+{% endif %}
+{% endfor -%}

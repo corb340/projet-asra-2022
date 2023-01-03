@@ -14,17 +14,18 @@
         state: latest
     - name: Configure kitten page
       template:
-        src: template/index.html.j2
-        dest: /var/www/html/index/html
+        src: templates/index.html.j2
+        dest: /var/www/html/index.html
     - name: Configure Nginx to listen on the vRack
       template:
-        src: template/default.j2
+        src: templates/default.j2
         dest: /etc/nginx/sites-available/default
       notify:
-        - Restart nginx
+        - Restart Nginx
 #installation/configuration de docker et de ses dependances
     - name: Ensure Docker dependencies are installed
       apt:
+        update_cache: true
         name:
           - apt-transport-https
           - ca-certificates
@@ -44,16 +45,20 @@
           - docker-compose
           - docker-compose-plugin
 #installation du firewall
-    - name: Ensure firewall is installed
-      apt:
-        name: ufw
-        state: latest
+#    - name: Ensure firewall is installed
+#      apt:
+#        name: ufw
+#        state: latest
 #handlers des differentes composantes installees
   handlers:
     - name: Restart Nginx
-      service:
+      ansible.builtin.service:
         name: nginx
         state: restarted
+#    - name: Reload ufw (Firewall)
+#      ansible.builtin.service:
+#        name: ufw
+#        state: reloaded
 
 #configuration de l'instance Front-End
 - name: Install and configure HaProxy on Front-End
@@ -77,14 +82,6 @@
 #handlers des composantes installees
   handlers:
   - name: Reload haproxy
-    service:
+    ansible.builtin.service:
       name: haproxy
-      state: reloaded
-  - name: Reload Nginx
-    service:
-      name: nginx
-      state: reloaded
-  - name: Reload ufw (Firewall)
-    service:
-      name: ufw
       state: reloaded
