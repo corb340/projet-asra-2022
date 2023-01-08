@@ -1,0 +1,42 @@
+---
+
+- name: facts
+  hosts: all
+  gather_facts: yes
+
+- name: host
+  hosts: backends
+  tasks:
+    - name: "Firewall rule: Authorize all on vRack"
+      ansible.builtin.iptables:
+        comment: open bar vRack
+        action: append
+        chain: INPUT
+        src_range: 192.168.25.1-192.168.25.254
+        policy: ACCEPT
+   # - name: "Firewall rule: Authorize Frontend=>backend communication"
+   #   ansible.builtin.iptables:
+   #     comment: Front=>back communication
+   #     action: append
+   #     chain: INPUT
+   #     protocol: tcp
+   #     in_interface: ens3
+   #     source: "{{varhosts[inventory_hostname].groups.front[0]}}"
+   #     policy: REJECT
+    - name: "Firewall rule: Authorize only coming from the front"
+      ansible.builtin.iptables:
+        comment: Forbid incoming traffic from internet
+        action: append
+        chain: INPUT
+        protocol: tcp
+        source: "{{item}}/32"
+        destination_port: 80
+        policy: ACCEPT
+      with_list: "{{hostvars[inventory_hostname].groups.front}}"
+    - name: "Firewall rule: Authorize only coming from the front"
+      ansible.builtin.iptables:
+        comment: Forbid incoming traffic from internet
+        action: append
+        chain: INPUT
+        destination: inventory_hostname
+        policy: DROP

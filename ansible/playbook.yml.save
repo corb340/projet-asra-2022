@@ -1,15 +1,16 @@
 ---
-
 #configuration des instances Backend
-- name : Configuring back-end instances
+- name: Configuring back-end instances
   hosts: backends
   gather_facts: yes
   vars:
     test: "Mon user eductive25: le meilleur !"
+    front_ip: hostvars[inventory_hostname].groups.front[0]
   tasks:
-#installation et configuration de nginx
+    #installation et configuration de nginx
     - name: Ensure Nginx package is installed
       apt:
+        update_cache: true
         name: nginx
         state: latest
     - name: Configure kitten page
@@ -22,7 +23,7 @@
         dest: /etc/nginx/sites-available/default
       notify:
         - Restart Nginx
-#installation/configuration de docker et de ses dependances
+    #installation/configuration de docker et de ses dependances
     - name: Ensure Docker dependencies are installed
       apt:
         update_cache: true
@@ -44,44 +45,52 @@
           - docker
           - docker-compose
           - docker-compose-plugin
-#installation du firewall
-#    - name: Ensure firewall is installed
-#      apt:
-#        name: ufw
-#        state: latest
-#handlers des differentes composantes installees
+        state: latest
+    - name: Ensure or install ifconfig.io on the docker
+      copy:
+        src: templates/ifconfig.io
+        dest: /home/debian/
+    - name: Ensure deployment of image ifconfig.io
+      community.docker.docker_compose:
+        project_name: ifconfig.io
+        project_src: /home/debian/ifconfig.io/
+    #Regles firewall
+    - name: "Firewall rule: Authorize all on vRack"
+      iptables:
+        comment: open bar vRack
+  #handlers des differentes composantes installees
   handlers:
     - name: Restart Nginx
       ansible.builtin.service:
         name: nginx
         state: restarted
-#    - name: Reload ufw (Firewall)
-#      ansible.builtin.service:
-#        name: ufw
-#        state: reloaded
+    - name: Reload ufw (Firewall)
+      ansible.builtin.service:
+        name: ufw
+        state: reloaded
 
 #configuration de l'instance Front-End
 - name: Install and configure HaProxy on Front-End
   hosts: front
   tasks:
-#installation et configuration de HaProxy
-  - name: Ensure installation and update of HaProxy
-    apt:
-      name: haproxy
-      state: latest
-  - name: Ensure HaProxy has started
-    service:
-      name: haproxy
-      state: started
-  - name: Configurate HaProxy
-    template:
-      src: templates/haproxy.cfg.j2
-      dest: /etc/haproxy/haproxy.cfg
-    notify:
-    - Reload haproxy
-#handlers des composantes installees
+    #installation et configuration de HaProxy
+    - name: Ensure installation and update of HaProxy
+      apt:
+        name: haproxy
+        state: latest
+    - name: Ensure HaProxy has started
+      service:
+        name: haproxy
+        state: started
+    - name: Configurate HaProxy
+      template:
+        src: templates/haproxy.cfg.j2
+        dest: /etc/haproxy/haproxy.cfg
+      notify:
+        - Reload haproxy
+  #handlers des composantes installees
   handlers:
-  - name: Reload haproxy
-    ansible.builtin.service:
-      name: haproxy
-      state: reloaded
+    - name: Reload haproxy
+      ansible.builtin.service:
+        name: haproxy
+        state: reloaded

@@ -50,12 +50,12 @@ listen stats
 #------------------
 # frontend instances
 #------------------
-frontend front_1
+frontend front_nginx
     bind 0.0.0.0:80
     mode http
     default_backend backend_nginx
 
-frontend front_2
+frontend front_docker
     bind 0.0.0.0:81
     mode http
     default_backend backend_docker
@@ -67,6 +67,7 @@ frontend front_2
 backend backend_nginx
     mode http
     balance roundrobin
+    option forwardfor
 {% for backend in groups.backends -%}
 {% set list1=hostvars[backend].ansible_facts.fqdn.split('-') %}
 {% if list1[2] == "gra" %}
@@ -79,11 +80,12 @@ backend backend_nginx
 backend backend_docker
     mode http
     balance roundrobin
+    option forwardfor
 {% for backend in groups.backends -%}
 {% set list1=hostvars[backend].ansible_facts.fqdn.split('-') %}
 {% if list1[2] == "gra" %}
-    server {{hostvars[backend].ansible_facts.fqdn}} {{ hostvars[backend].ansible_facts.ens4.ipv4.address }}:4444 check
+    server {{hostvars[backend].ansible_facts.fqdn}} {{ hostvars[backend].ansible_facts.ens4.ipv4.address }}:8080 check
 {% else %}
-    server {{hostvars[backend].ansible_facts.fqdn}} {{ hostvars[backend].ansible_facts.ens4.ipv4.address }}:4444 check backup
+    server {{hostvars[backend].ansible_facts.fqdn}} {{ hostvars[backend].ansible_facts.ens4.ipv4.address }}:8080 check backup
 {% endif %}
 {% endfor -%}

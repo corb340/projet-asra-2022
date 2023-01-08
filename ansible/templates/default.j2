@@ -6,4 +6,5 @@ server {
 	location / {
 		try_files $uri $uri/ =404;
 	}
+	proxy_set_header CF-Connecting-IP $http_x_forwarded_for;
 }

@@ -1,0 +1,165 @@
+---
+#configuratin des conditions preliminaires/problèmes rencontrés tout au long du projet
+- name: Setting up prerequsites for the front-end instance
+  hosts: all
+  gather_facts: yes
+  tasks:
+    - name: "Creating /home/wordpress-data directory on front-end and back-end instances"
+      file:
+        path: /home/wordpress-data
+        state: directory
+
+
+#configuration de l'instance Front-End
+- name: Install and configure HaProxy on Front-End
+  hosts: front
+  tasks:
+    #installation et configuration de HaProxy
+    - name: Ensure installation and update of HaProxy
+      apt:
+        name: haproxy
+        state: latest
+    - name: Ensure HaProxy has started
+      service:
+        name: haproxy
+        state: started
+    - name: Configurate HaProxy
+      template:
+        src: templates/haproxy.cfg.j2
+        dest: /etc/haproxy/haproxy.cfg
+      notify:
+        - Reload haproxy
+    - name: Ensure installation of NFS server
+      apt:
+        name:
+          - nfs-kernel-server
+          - nfs-common
+        state: latest
+    - name: Ensure nfs service is running
+      service:
+        name: nfs-kernel-server
+        state: started
+    - name: Copy /etc/exports file
+      template:
+        src: templates/exports.j2
+        dest: /etc/exports
+      notify:
+        - Restart nfs-kernel-server
+#gestion des handlers
+  handlers:
+    - name: Reload haproxy
+      ansible.builtin.service:
+        name: haproxy
+        state: reloaded
+    - name: Restart nfs-kernel-server
+      ansible.builtin.service:
+        name: nfs-kernel-server
+        state: restarted
+
+#configuration des instances Backend
+- name: Configuring back-end instances
+  hosts: backends
+  gather_facts: yes
+  vars:
+    test: "Mon user eductive25: le meilleur !"
+  tasks:
+    #installation et configuration de nginx
+    - name: Ensure Nginx package is installed
+      apt:
+        update_cache: true
+        name: nginx
+        state: latest
+    - name: Configure kitten page
+      template:
+        src: templates/index.html.j2
+        dest: /var/www/html/index.html
+    - name: Configure Nginx to listen on the vRack
+      template:
+        src: templates/default.j2
+        dest: /etc/nginx/sites-available/default
+      notify:
+        - Restart Nginx
+    #installation/configuration de docker et de ses dependances
+    - name: Ensure Docker dependencies are installed
+      apt:
+        update_cache: true
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - lsb-release
+          - gnupg
+        state: latest
+    - name: Ensure key is succesfully installed
+      apt_key:
+        url: "https://download.docker.com/linux/debian/gpg"
+    - name: Ensure repository is successfully updated
+      apt_repository:
+        repo: "deb https://download.docker.com/linux/debian bullseye stable"
+    - name: Ensure successful installation of Docker
+      apt:
+        name:
+          - docker
+          - docker-compose
+          - docker-compose-plugin
+        state: latest
+    - name: Ensure or install ifconfig.io on the docker
+      copy:
+        src: templates/ifconfig.io
+        dest: /home/debian/
+    - name: Ensure deployment of image ifconfig.io
+      community.docker.docker_compose:
+        project_name: ifconfig.io
+        project_src: /home/debian/ifconfig.io/
+    #iptables installé par défaut, on peut démarrer par les règles
+    #Regles firewall
+#    - name: "Firewall rule: Authorize all on vRack"
+#      ansible.builtin.iptables:
+#        comment: open bar vRack
+#        action: append
+#        chain: INPUT
+#        protocol: tcp
+#        source: "192.168.25.0/24"
+        #destination: 192.168.25.0/24
+#        policy: ACCEPT
+   # - name: "Firewall rule: Authorize Frontend=>backend communication"
+   #   ansible.builtin.iptables:
+   #     comment: Front=>back communication
+   #     action: append
+   #     chain: INPUT
+   #     protocol: tcp
+   #     in_interface: ens3
+   #     source: "{{varhosts[inventory_hostname].groups.front[0]}}"
+   #     policy: REJECT
+#    - name: "Firewall rule: Authorize only coming from the front"
+#      ansible.builtin.iptables:
+#        comment: Forbid incoming traffic from internet
+#        action: append
+#        chain: INPUT
+#        protocol: tcp
+#        destination: "{{items}}"
+#        destination_port: '!22'
+#        policy: REJECT
+#      with_items: groups.front
+
+    - name: Ensure installation of nfs package
+      apt:
+        name: nfs-common
+        state: latest
+    - name: mounting NFS clients to NFS server
+      mount:
+        src: 192.168.25.254:/home/wordpress-data
+        path: /home/wordpress-data
+        fstype: nfs
+        state: mounted
+      notify:
+        - Restart nfs-common
+  #handlers des differentes composantes installees
+  handlers:
+    - name: Restart Nginx
+      ansible.builtin.service:
+        name: nginx
+        state: restarted
+    - name: Restart nfs-common
+      service:
+        name: nfs-common
+        state: reloaded
