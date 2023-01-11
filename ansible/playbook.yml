@@ -29,6 +29,7 @@
         dest: /etc/haproxy/haproxy.cfg
       notify:
         - Reload haproxy
+    #install et config nfs
     - name: Ensure installation of NFS server
       apt:
         name:
@@ -110,7 +111,7 @@
       community.docker.docker_compose:
         project_name: ifconfig.io
         project_src: /home/debian/ifconfig.io/
-    #iptables installé par défaut, on peut démarrer par les règles
+     #iptables installé par défaut, on peut démarrer par les règles
     #Regles firewall
 #    - name: "Firewall rule: Authorize all on vRack"
 #      ansible.builtin.iptables:
@@ -140,7 +141,6 @@
 #        destination_port: '!22'
 #        policy: REJECT
 #      with_items: groups.front
-
     - name: Ensure installation of nfs package
       apt:
         name: nfs-common
@@ -151,15 +151,17 @@
         path: /home/wordpress-data
         fstype: nfs
         state: mounted
-      notify:
-        - Restart nfs-common
+    - name: Copy docker-compose file into the nfs directory
+      template:
+        src: templates/docker-compose.yml.j2
+        dest: /home/wordpress-data/docker-compose.yml
+    - name: Ensure deployment of wordpress image
+      community.docker.docker_compose:
+        project_name: wordpress
+        project_src: /home/wordpress-data/
   #handlers des differentes composantes installees
   handlers:
     - name: Restart Nginx
       ansible.builtin.service:
         name: nginx
         state: restarted
-    - name: Restart nfs-common
-      service:
-        name: nfs-common
-        state: reloaded

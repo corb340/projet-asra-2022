@@ -60,6 +60,11 @@ frontend front_docker
     mode http
     default_backend backend_docker
 
+frontend front_wordpress
+    bind 0.0.0.0:82
+    mode http
+    default_backend backend_wordpress
+
 #------------------
 # backend instances
 #------------------
@@ -71,9 +76,9 @@ backend backend_nginx
 {% for backend in groups.backends -%}
 {% set list1=hostvars[backend].ansible_facts.fqdn.split('-') %}
 {% if list1[2] == "gra" %}
-    server {{hostvars[backend].ansible_facts.fqdn}} {{ hostvars[backend].ansible_facts.ens3.ipv4.address }}:8888 check
+    server {{hostvars[backend].ansible_facts.fqdn}} {{ hostvars[backend].ansible_facts.ens3.ipv4.address }}:80 check
 {% else %}
-    server {{hostvars[backend].ansible_facts.fqdn}} {{ hostvars[backend].ansible_facts.ens3.ipv4.address }}:8888 check backup
+    server {{hostvars[backend].ansible_facts.fqdn}} {{ hostvars[backend].ansible_facts.ens3.ipv4.address }}:80 check backup
 {% endif %}
 {% endfor -%}
 
@@ -87,5 +92,19 @@ backend backend_docker
     server {{hostvars[backend].ansible_facts.fqdn}} {{ hostvars[backend].ansible_facts.ens4.ipv4.address }}:8080 check
 {% else %}
     server {{hostvars[backend].ansible_facts.fqdn}} {{ hostvars[backend].ansible_facts.ens4.ipv4.address }}:8080 check backup
+{% endif %}
+{% endfor -%}
+
+
+backend backend_wordpress
+    mode http
+    balance roundrobin
+    option forwardfor
+{% for backend in groups.backends -%}
+{% set list1=hostvars[backend].ansible_facts.fqdn.split('-') %}
+{% if list1[2] == "gra" %}
+    server {{hostvars[backend].ansible_facts.fqdn}} {{ hostvars[backend].ansible_facts.ens4.ipv4.address }}:8000 check
+{% else %}
+    server {{hostvars[backend].ansible_facts.fqdn}} {{ hostvars[backend].ansible_facts.ens4.ipv4.address }}:8000 check backup
 {% endif %}
 {% endfor -%}

@@ -1,0 +1,20 @@
+# docker-compose du wordpress
+
+version: "3.6"
+
+
+services:
+  wp:
+    image: wordpress:latest
+    ports:
+      - "8000:80"
+    volumes:
+      - ./wp-app:/var/www/html
+    restart: always
+    environment:
+      WORDPRESS_DB_HOST: {{hostvars[inventory_hostname].db_hostname}}
+      WORDPRESS_DB_NAME: {{hostvars[inventory_hostname].db_name}}
+      WORDPRESS_DB_USER: {{hostvars[inventory_hostname].db_username}}
+      WORDPRESS_DB_PASSWORD: {{hostvars[inventory_hostname].db_password}}
+volumes:
+  wp-app:

@@ -115,13 +115,69 @@ resource "openstack_compute_instance_v2" "backend_sbg" {
   depends_on = [ovh_cloud_project_network_private_subnet.subnetwork_sbg]
 }
 
+#================== BASE DE DONNEES ==================#
 
-#================== AUTRES ==================#
+resource "ovh_cloud_project_database" "db_eductive25" {
+  engine       = "mysql"
+  flavor       = "db1-4"
+  
+  nodes {
+    region = "GRA"
+  }
+  plan     = "essential"
+  version  = "8"
+}
+
+resource "ovh_cloud_project_database_user" "eductive25" {
+  service_name = ovh_cloud_project_database.db_eductive25.service_name
+  engine       = ovh_cloud_project_database.db_eductive25.engine
+  name         = "eductive25"
+  cluster_id   = ovh_cloud_project_database.db_eductive25.id
+}
+
+output "db_username" {
+  value = ovh_cloud_project_database_user.eductive25.name
+}
+
+output "db_password" {
+  value     = "123?password!"
+  sensitive = true
+}
+
+resource "ovh_cloud_project_database_database" "database" {
+  service_name = ovh_cloud_project_database.db_eductive25.service_name
+  cluster_id   = ovh_cloud_project_database.db_eductive25.id
+  engine       = ovh_cloud_project_database.db_eductive25.engine
+  name         = "wordpress_data"
+  
+}
+
+resource "ovh_cloud_project_database_ip_restriction" "iprestriction_gra" {
+  count        = var.backend_number_of_instances
+  service_name = ovh_cloud_project_database.db_eductive25.service_name
+  cluster_id   = ovh_cloud_project_database.db_eductive25.id
+  engine       = ovh_cloud_project_database.db_eductive25.engine
+  ip           = "${openstack_compute_instance_v2.backend_gra[count.index].access_ip_v4}/32"
+}
+
+resource "ovh_cloud_project_database_ip_restriction" "iprestriction_sbg" {
+  count        = var.backend_number_of_instances
+  service_name = ovh_cloud_project_database.db_eductive25.service_name
+  cluster_id   = ovh_cloud_project_database.db_eductive25.id
+  engine       = ovh_cloud_project_database.db_eductive25.engine
+  ip           = "${openstack_compute_instance_v2.backend_sbg[count.index].access_ip_v4}/32"
+}
+
+#================== ANSIBLE ==================#
 resource "local_file" "inventory" {
   filename = "../ansible/inventory.yml"
   content  = templatefile("templates/inventory.tmpl",
     {
-      front = openstack_compute_instance_v2.front.access_ip_v4,
+      db_name      = ovh_cloud_project_database_database.database.name
+      db_hostname  = split("/",split("@",ovh_cloud_project_database.db_eductive25.endpoints[0].uri)[1])[0]
+      db_username  = ovh_cloud_project_database_user.eductive25.name
+      db_password  = ovh_cloud_project_database_user.eductive25.password
+      front        = openstack_compute_instance_v2.front.access_ip_v4,
       backends_sbg = [for k, p in openstack_compute_instance_v2.backend_sbg: p.access_ip_v4],
       backends_gra = [for k, p in openstack_compute_instance_v2.backend_gra: p.access_ip_v4],
     }
