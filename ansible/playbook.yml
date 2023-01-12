@@ -111,46 +111,22 @@
       community.docker.docker_compose:
         project_name: ifconfig.io
         project_src: /home/debian/ifconfig.io/
-     #iptables installé par défaut, on peut démarrer par les règles
-    #Regles firewall
-#    - name: "Firewall rule: Authorize all on vRack"
-#      ansible.builtin.iptables:
-#        comment: open bar vRack
-#        action: append
-#        chain: INPUT
-#        protocol: tcp
-#        source: "192.168.25.0/24"
-        #destination: 192.168.25.0/24
-#        policy: ACCEPT
-   # - name: "Firewall rule: Authorize Frontend=>backend communication"
-   #   ansible.builtin.iptables:
-   #     comment: Front=>back communication
-   #     action: append
-   #     chain: INPUT
-   #     protocol: tcp
-   #     in_interface: ens3
-   #     source: "{{varhosts[inventory_hostname].groups.front[0]}}"
-   #     policy: REJECT
-#    - name: "Firewall rule: Authorize only coming from the front"
-#      ansible.builtin.iptables:
-#        comment: Forbid incoming traffic from internet
-#        action: append
-#        chain: INPUT
-#        protocol: tcp
-#        destination: "{{items}}"
-#        destination_port: '!22'
-#        policy: REJECT
-#      with_items: groups.front
+
+
+
+    # installation NFS 
     - name: Ensure installation of nfs package
       apt:
         name: nfs-common
         state: latest
+    #monter les clients NFS
     - name: mounting NFS clients to NFS server
       mount:
         src: 192.168.25.254:/home/wordpress-data
         path: /home/wordpress-data
         fstype: nfs
         state: mounted
+    # copie du docker-compose du wordpress
     - name: Copy docker-compose file into the nfs directory
       template:
         src: templates/docker-compose.yml.j2
@@ -159,6 +135,24 @@
       community.docker.docker_compose:
         project_name: wordpress
         project_src: /home/wordpress-data/
+
+
+    #iptables installé par défaut, on peut démarrer par les règles
+    # regle open vbar vrack
+    - name: "Firewall rule: Authorize all on vRack"
+      ansible.builtin.command: iptables --append INPUT --protocol tcp --src 192.168.25.0/24 --dst 192.168.25.0/24 --jump ACCEPT
+
+    #regle pour autoriser le back a reprendre les paquets forwardé par le front (nginx (80) en public)
+    - name: "Firewall rule: Authorize frontend to communicate with backend on public interface"
+      ansible.builtin.command: iptables --append INPUT --protocol tcp --src "{{item}}" --dest "{{inventory_hostname}}"  --dport 80 --jump ACCEPT
+      with_items:
+        - "{{hostvars[inventory_hostname].groups.front[0]}}"
+    # regle pour autoriser le back a se connecter via ssh
+    - name: "Firewall rule: Authorize backend connection to only ssh"
+      ansible.builtin.command: iptables --append INPUT --protocol tcp --dest "{{inventory_hostname}}" --match multiport --dports 22 --jump ACCEPT
+    #regle pour deny le reste sur le backend
+    - name: "Firewall rule: Deny anothing that connects to backend by default"
+      ansible.builtin.command: iptables --append INPUT --protocol tcp --dest "{{inventory_hostname}}" --jump DROP
   #handlers des differentes composantes installees
   handlers:
     - name: Restart Nginx

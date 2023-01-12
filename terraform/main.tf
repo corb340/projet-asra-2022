@@ -74,7 +74,7 @@ resource "openstack_compute_instance_v2" "front" {
 #de gravelines
 resource "openstack_compute_instance_v2" "backend_gra" {
   count       = var.backend_number_of_instances
-  name        = "backend_${var.instance_name}_gra_${count.index+2}"
+  name        = "backend_${var.instance_name}_gra_${count.index+1}"
   provider    = openstack.ovh
   image_name  = var.image_name
   flavor_name = var.flavor_name
