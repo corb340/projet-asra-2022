@@ -281,7 +281,10 @@ Cette partie de la configuration sert à configurer le front-end. Elle sert à:
 
 ![image](https://user-images.githubusercontent.com/56253490/212183252-422f4474-c294-4337-8c2b-da11878b356d.png)
 
-
 ### Serveur Wordpress Installé
 
 ![image](https://user-images.githubusercontent.com/56253490/212179127-8e6c4275-af3f-4e33-8ac4-59ff1dbbcb60.png)
+
+### Serveur statistiques
+
+![image](https://user-images.githubusercontent.com/56253490/212189599-03bf6388-817d-4a6a-8026-e4cf090472be.png)
