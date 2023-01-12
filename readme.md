@@ -212,3 +212,47 @@ Ce template est tout simplement le fichier template de la page web du serveur ch
 
 ### Le fichier playbook.yml
 
+Ce fichier est le fichier de configuration des instances. Il se découpe en une petite partie et deux grandes parties:
+
+1. La configuration partagée du front et des backends
+2. La configuration de l'instance front-end
+3. La configuration de l'instance back-end
+
+#### Configuration partagée
+
+Cette partie sert juste à créer les dossiers pour le share NFS sur le front et le backend, et a récupérer les facts.
+
+#### Configuration front-end
+
+Cette partie de la configuration sert à configurer le front-end. Elle sert à:
+- Configurer HaProxy
+	- installer les packages avec `apt`
+	- s'assurer que le service à démarré
+	- configurer haproxy en copiant le template
+	- reload le service à chaque modification
+- Configurer le serveur NFS
+	- installation des paquets `nfs-kernel-server` et `nfs-common`
+	- copier le template du fichier `exports`
+	- reload le service
+- Gérer les handler:
+	- concernant le service haproxy
+	- concernant le service serveur NFS
+
+#### Configuration back-end
+
+Cette partie de la configuration sert à configurer le front-end. Elle sert à:
+- Mettre en place la variable pour le serveur `nginx`
+- S'assurer de l'installation de `nginx`
+	- en installant le package via `apt`
+	- en configurant la page chaton (copy du template `index.html.j2`)
+	- en configurant nginx pour écouter sur le réseau (copy du template `default.j2`)
+- S'assurer de l'installation des deux dockers
+	- en installant les packages, les clés répos et les certificats d'authenticité
+	- en installant `docker-compose`
+	- puis en configurant les deux dockers
+		- pour `ifconfig.io` il s'agit de copier le repo, puis de lancer le docker-compose
+		- puis en deuxième, un peu plus loin, de copier le template du docker-compose du wordpress et de l'executer.
+- S'assurer de l'installation du NFS
+ 	- en installant les packages avec `apt`
+ 	- en montant les clients NFS avec `mount`
+ 	- 
