@@ -19,6 +19,8 @@ A son tour, Ansible est utilisé pour déployer les configuration sur ces mêmes
 	- un fichier `default.j2` qui contient le template écrit en jinja (j2) de la configuration serveur de Nginx
 	- un fichier `haproxy.cfg.j2` qui contient le template de la configuration de HaProxy
 	- un fichier `index.html.j2` qui contient le template de la page web chaton, tournant sous Nginx
+	- un fichier `exports.j2` qui contient le template du fichier configuration du serveur NFS
+	- un fichier `docker-compose.yml.j2` qui contient le template du fichier configuration du docker.
 	- un dossier `ifconfig.io` qui est le dossier docker de l'application web ifconfig.io
 
 ## Le dossier Terraform
