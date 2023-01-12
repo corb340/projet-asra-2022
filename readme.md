@@ -252,7 +252,36 @@ Cette partie de la configuration sert à configurer le front-end. Elle sert à:
 	- puis en configurant les deux dockers
 		- pour `ifconfig.io` il s'agit de copier le repo, puis de lancer le docker-compose
 		- puis en deuxième, un peu plus loin, de copier le template du docker-compose du wordpress et de l'executer.
+			- Attention à cette partie, elle peut-être longue à charger. Il faudra attendre un peu.
 - S'assurer de l'installation du NFS
  	- en installant les packages avec `apt`
  	- en montant les clients NFS avec `mount`
- 	- 
+ - Installer le docker wordpress
+ 	- en copiant le template sur l'instance backend (`docker-compose.yml`)
+ 	- en executant `docker-compose`
+ - Déployer les règles firewall
+ 	- Pour rejeter les internautes accédant directement aux backends
+ 	- Ouvrir le réseau en open bar sur le vRack
+ 	- S'assurer que le frontend communique bien sur les ports seulement autorisés
+ - Concernant les handlers:
+ 	- Un handler pour redémarre Nginx afin de s'assurer qu'il prenne en compte toutes modifications faites
+ 
+ 
+ ## Aperçu Final du projet après finition
+ 
+ ### Serveur Chaton
+ 
+ ![image](https://user-images.githubusercontent.com/56253490/212178674-15f5a0c3-52f9-4f45-8d11-83bf010ae1c0.png)
+
+### Serveur ifconfig
+
+![image](https://user-images.githubusercontent.com/56253490/212178981-addd3a24-f8d7-4764-89fc-5a24f4e02b39.png)
+
+### Serveur wordpress avant installation
+
+![image](https://user-images.githubusercontent.com/56253490/212183252-422f4474-c294-4337-8c2b-da11878b356d.png)
+
+
+### Serveur Wordpress Installé
+
+![image](https://user-images.githubusercontent.com/56253490/212179127-8e6c4275-af3f-4e33-8ac4-59ff1dbbcb60.png)
