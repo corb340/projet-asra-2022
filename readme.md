@@ -147,3 +147,66 @@ Cette partie est la dernière du fichier `main.tf`. Il s'agit en effet d'un seul
 	- ainsi que les instances mis en attribut dans une boucle générique, inclu dans la fonction
 	
 ## Le dossier Ansible
+
+Ce dossier, comporte énormément de fichiers. Ces fichiers sont séparés en deux types:
+
+1. Les templates, dans un fichier `templates`
+2. Le playbook, appelé `playbook.yml`, qui comporte la plupart du reste des fonctionnalités.
+
+### Le dossier template
+
+Ce dossier comporte tous les templates des différentes configurations. Il est composé:
+
+- D'un dossier `ifconfig.io`, qui est juste le repo de l'application `ifconfig.io`
+- D'une série de fichiers, templatisé sous format jinja (`.j2`)
+
+#### Le dossier ifconfig.io
+
+Ce repo github sert à récupérer son adresse ip. C'est une application Docker composé d'une multitude de fichiers utile au fonctionnement du site, ainsi que d'un `docker-compose.yml` et d'un `Dockerfile`.
+
+#### Le fichier default.j2
+
+Ce fichier est un fichier destiné au serveur web `nginx`, qui sera en backend. C'est un fichier à poser à l'emplacement `/etc/nginx/sites-available/`, et qui consiste à dire au serveur quoi faire. A savoir:
+- `listen`: écouter sur l'IP publique de notre instance compute sur le port 80 par défaut
+- `root`: à rediriger la racine de ce serveur vers `/var/www/html/`
+- `index`: à indiquer quelle est la page d'accueil par défaut, dans un ordre de priorité:
+	- d'abord `index.html`
+	- ensuite `index.htm`
+	- puis enfin `index.nginx-debian.html`
+- `location`: sert à dire s'il y a une redirection à faire ou non
+- `proxy_set_header`: sert à "forward" les requêtes effectuées sur le front.
+
+#### Le fichier docker-compose.yml.j2
+
+Ce fichier est le fichier template docker-compose du Wordpress. Ce fichier est composé de la version, d'un service wp composé lui-même d'une image wordpress de dernière version, d'une redirection de port (port 8000 de la machine redirigé vers le port 80 du container docker), d'un volume servant à mapper sur le serveur NFS, puis d'une liste de variables utilisés par wordpress pour se connecter à la base de données distante, en se servant des valeurs passées en inventaire par terraform (à l'aide du template).
+
+#### Le fichier exports.j2
+
+Ce fichier est le fichier servant à configurer le serveur NFS (qui est l'instance front).
+
+#### Le fichier haproxy.cfg.j2
+
+Ce fichier est le fichier configuration principal du reverse proxy `haproxy`. En effet, dans ce fichier bien rempli, il y a plusieurs choses intéressantes:
+
+- Une configuration globale, recommandée pour n'importe quelle utilisation de ce proxy
+- Une configuration par défaut, pour les mêmes raison que citées ci-dessus
+- Une configuration afin d'afficher les statistiques de l'infrastructure (notion Actif/Backup implémentée, si elle est fonctionelle, quel serveur est down...)
+- des interfaces d'écoute frontend (qui écoute donc sur l'IP publique de communications venant depuis internet). On en compte trois:
+	1. Une première interface, servant à écouter sur le port 80, et donc si communication entrante le renvoie vers la partie backend du serveur chaton (Nginx)
+	2. Une deuxième interface, servant à écouter sur le port 81, et à rediriger vers le backend du docker ifconfig.io
+	3. Une troisième interface, servant à écouter sur le port 82, et à rediriger vers le backend du docker wordpress
+- des interfaces d'écoute backend (après être redirigé par le front-end). Les redirection selons les régions sont:
+	- Active pour `GRA11`
+	- Backup pour `SBG5`
+	- Voici sa composition:
+		1. Une première interface backend, qui redirige ce qu'il a reçu du frontend vers les serveurs backend sur le port 80 (Serveur chaton)
+		2. Une deuxième interface backend, qui redirige ce qu'il a reçu du frontend vers les serveurs backend sur le port 81 (Serveur ifconfig.io)
+		3. Une troisième interface backend, qui redirige ce qu'il a reçu du frontend vers les serveurs backend sur le port 82 (Serveur wordpress)
+	- Tous ces serveurs sont "forwardés"
+
+#### Le fichier index.html.j2
+
+Ce template est tout simplement le fichier template de la page web du serveur chaton.
+
+### Le fichier playbook.yml
+
