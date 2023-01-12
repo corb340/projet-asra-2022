@@ -2,7 +2,7 @@
 
 version: "3.6"
 
-
+#wordpress nu, avec connexion à distance à une base de données mySQL
 services:
   wp:
     image: wordpress:latest
@@ -12,6 +12,7 @@ services:
       - ./wp-app:/var/www/html
     restart: always
     environment:
+      #variables se servant de hostvars (variable spéciale de ansible pour récupérer les facts) afin de récupérer les variables de la db passé par terraform sur l'inventaire
       WORDPRESS_DB_HOST: {{hostvars[inventory_hostname].db_hostname}}
       WORDPRESS_DB_NAME: {{hostvars[inventory_hostname].db_name}}
       WORDPRESS_DB_USER: {{hostvars[inventory_hostname].db_username}}

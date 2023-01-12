@@ -46,7 +46,7 @@
         dest: /etc/exports
       notify:
         - Restart nfs-kernel-server
-#gestion des handlers
+  #gestion des handlers
   handlers:
     - name: Reload haproxy
       ansible.builtin.service:
@@ -111,10 +111,7 @@
       community.docker.docker_compose:
         project_name: ifconfig.io
         project_src: /home/debian/ifconfig.io/
-
-
-
-    # installation NFS 
+    # installation NFS
     - name: Ensure installation of nfs package
       apt:
         name: nfs-common
